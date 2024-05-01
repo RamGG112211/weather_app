@@ -1,16 +1,18 @@
 import { useEffect, useState } from "react";
 import "./App.css";
-import { fetchWeatherApi } from "openmeteo";
+// import { fetchWeatherApi } from "openmeteo";
 
 function App() {
-  const my_location = "Pokhara";
+  const search_location = "Pokhara";
+  const [myLocation, setMyLocation] = useState<string | null>(null);
   const [myLocationLongitude, setMyLocationLongitude] = useState(null);
   const [myLocationLatitude, setMyLocationLatitude] = useState(null);
   const [myLocationTimezone, setMyLocationTimezone] = useState(null);
 
-  const [sevenDaysForecast, setSevenDaysForecast] = useState(null);
-  const [todaysForecast, setTodaysForecast] = useState(null);
-
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [sevenDaysForecast, setSevenDaysForecast] = useState<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [todaysForecast, setTodaysForecast] = useState<any>(null);
 
   //weather states
   // const weatherApiParams =
@@ -26,12 +28,15 @@ function App() {
 
   const getMyLocationDetails = async () => {
     await fetch(
-      `https://api.geoapify.com/v1/geocode/search?text=${my_location}%2C%20Nepal&format=json&apiKey=57ac1294aeb340c0bfde9e112bc97f41`
+      `https://api.geoapify.com/v1/geocode/search?text=${search_location}%2C%20Nepal&format=json&apiKey=57ac1294aeb340c0bfde9e112bc97f41`
     )
       .then((response) => response.json())
       .then((result) => {
         const myLocationDetails = result.results[0];
         console.log(myLocationDetails);
+        setMyLocation(
+          `${myLocationDetails.address_line1}, ${myLocationDetails.address_line2}`
+        );
         setMyLocationLatitude(myLocationDetails.lat);
         setMyLocationLongitude(myLocationDetails.lon);
         setMyLocationTimezone(myLocationDetails.timezone.name);
@@ -118,7 +123,222 @@ function App() {
     return () => clearInterval(intervalId);
   }, [myLocationLatitude, myLocationLongitude, myLocationTimezone]);
 
-  return <main>hello Ram</main>;
+  function getDayFromDate(dateString: string) {
+    // Create a new Date object from the dateString
+    const date = new Date(dateString);
+
+    const daysOfWeek = [
+      "Sunday",
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+    ];
+    const dayIndex = date.getDay();
+    const dayName = daysOfWeek[dayIndex];
+
+    return dayName;
+  }
+
+  function convertTimeToAMPM(timeString: string) {
+    const date = new Date(timeString);
+    let hours = date.getHours();
+    let minutes: string | number = date.getMinutes();
+    const ampm = hours >= 12 ? "P.M." : "A.M.";
+    hours %= 12;
+    hours = hours || 12; // Handle midnight (0 hours)
+
+    // Add leading zero to minutes if necessary
+    minutes = minutes < 10 ? "0" + minutes : minutes;
+
+    return hours + ":" + minutes + " " + ampm;
+  }
+
+  //make it dynamic in every 15minutes
+  const todaysTemperature =
+    todaysForecast &&
+    `${todaysForecast.minutely_15.temperature_2m[0]} ${todaysForecast.minutely_15_units.temperature_2m}`;
+  const todaysSunrise =
+    sevenDaysForecast && convertTimeToAMPM(sevenDaysForecast.daily.sunrise[0]);
+  const todaysSunset =
+    sevenDaysForecast && convertTimeToAMPM(sevenDaysForecast.daily.sunset[0]);
+
+  //make it dynamic in every 15minutes
+  const todaysWeatherCondition =
+    todaysForecast &&
+    (todaysForecast.minutely_15.weather_code[0] == 0
+      ? "Sunny"
+      : todaysForecast.minutely_15.weather_code[0] == 1 ||
+        todaysForecast.minutely_15.weather_code[0] == 2 ||
+        todaysForecast.minutely_15.weather_code[0] == 3
+      ? "Cloudy"
+      : "Rainy");
+  //make it dynamic in every 15minutes
+  const weatherImgUrl =
+    todaysForecast &&
+    (todaysForecast.minutely_15.weather_code[0] == 0
+      ? "./images/contrast.png"
+      : todaysForecast.minutely_15.weather_code[0] == 1 ||
+        todaysForecast.minutely_15.weather_code[0] == 2 ||
+        todaysForecast.minutely_15.weather_code[0] == 3
+      ? "./images/cloudy.png"
+      : "./images/rain.png");
+
+  const humidity =
+    todaysForecast &&
+    `${todaysForecast.minutely_15.relative_humidity_2m[0]} ${todaysForecast.minutely_15_units.relative_humidity_2m}`;
+  const wind_speed =
+    todaysForecast &&
+    `${todaysForecast.minutely_15.wind_speed_10m[0]} ${todaysForecast.minutely_15_units.wind_speed_10m}`;
+  const uv =
+    todaysForecast && `${todaysForecast.minutely_15.direct_radiation[0]}`;
+
+  interface weatherDataType {
+    temperature: string;
+    day: string;
+    imgUrl: string;
+  }
+
+  const [sevenDaysForecastExtractedData, setSevenDaysForecastExtractedData] =
+    useState<weatherDataType[]>();
+
+  const updateSevenDaysForecastExtractedData = () => {
+    console.log("called me!");
+
+    const duplicateArray:weatherDataType[] = Array.from({
+      length: 7,
+    });
+    for (let i = 0; i < 7; i++) {
+      if (sevenDaysForecast) {
+        duplicateArray[i] = {
+          temperature: `${sevenDaysForecast.daily.temperature_2m_max[i]} ${sevenDaysForecast.daily_units.temperature_2m_max} / ${sevenDaysForecast.daily.temperature_2m_min[i]} ${sevenDaysForecast.daily_units.temperature_2m_min}`,
+          imgUrl:
+            sevenDaysForecast.daily.weather_code[i] == 0
+              ? "./images/contrast.png"
+              : sevenDaysForecast.daily.weather_code[i] == 1 || sevenDaysForecast.daily.weather_code[i] == 2 || sevenDaysForecast.daily.weather_code[i] == 3
+              ? "./images/cloudy.png"
+              : "./images/rain.png",
+          day: getDayFromDate(sevenDaysForecast.daily.time[i]),
+        };
+      }
+    }
+    setSevenDaysForecastExtractedData(duplicateArray);
+  };
+
+  useEffect(() => {
+    updateSevenDaysForecastExtractedData();
+  }, []);
+
+  useEffect(() => {
+    updateSevenDaysForecastExtractedData();
+    
+  }, [sevenDaysForecast]);
+
+  useEffect(()=>{
+    console.log(
+      "sevenDaysForecastExtractedData: ",
+      sevenDaysForecastExtractedData
+    );
+  },[sevenDaysForecastExtractedData])
+
+  return (
+    <main>
+      <h2 className=" ">
+        Your Location: {myLocation ? myLocation : "Tracking location..."}
+      </h2>
+
+      {/*todays weather forecast*/}
+      {todaysForecast && sevenDaysForecast ? (
+        <div>
+          <div>
+            <h1>{todaysTemperature}</h1>
+
+            <div>
+              <div>
+                <span>Sunrise</span>
+                <span>{todaysSunrise}</span>
+              </div>
+
+              <div>
+                <span>Sunset</span>
+                <span>{todaysSunset}</span>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <img
+              src={weatherImgUrl}
+              alt="weather-img"
+              className=" h-[155px] w-[155px] object-cover object-center"
+            />
+            <span>{todaysWeatherCondition}</span>
+          </div>
+
+          {/*extra details*/}
+          <div>
+            <div>
+              {/*icon here*/}
+
+              <span>{humidity}</span>
+              <span>Humidity</span>
+            </div>
+
+            <div>
+              {/*icon here*/}
+
+              <span>{wind_speed}</span>
+              <span>Wind Speed</span>
+            </div>
+
+            <div>
+              {/*icon here*/}
+
+              <span>{uv}</span>
+              <span>UV</span>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <span>Loading todays weather forecast</span>
+      )}
+
+      {/*7days weather forecast*/}
+      <div>
+        <h2>7 Days Forecast</h2>
+
+        {sevenDaysForecastExtractedData &&
+          sevenDaysForecastExtractedData.every(
+            (weatherData) => weatherData != undefined
+          ) && (
+            <div>
+              {sevenDaysForecastExtractedData.slice(1).map((weatherData, i) => {
+                const { temperature, day, imgUrl } = weatherData;
+
+                return (
+                  <div key={i}>
+                    <img
+                      src={imgUrl}
+                      alt="weather-img"
+                      className=" h-[40px] w-[40px] object-cover object-center"
+                    />
+
+                    <div>
+                      <span>{temperature}</span>
+                      <span className=" uppercase">
+                        {i == 0 ? "tom" : day.slice(0, 3)}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+      </div>
+    </main>
+  );
 }
 
 export default App;
