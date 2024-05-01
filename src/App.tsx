@@ -13,6 +13,7 @@ function App() {
   const [sevenDaysForecast, setSevenDaysForecast] = useState<any>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [todaysForecast, setTodaysForecast] = useState<any>(null);
+  const [currentTimeIndex, setCurrentTimeIndex] = useState<number>();
 
   //weather states
   // const weatherApiParams =
@@ -33,7 +34,7 @@ function App() {
       .then((response) => response.json())
       .then((result) => {
         const myLocationDetails = result.results[0];
-        console.log(myLocationDetails);
+        // console.log(myLocationDetails);
         setMyLocation(
           `${myLocationDetails.address_line1}, ${myLocationDetails.address_line2}`
         );
@@ -48,11 +49,11 @@ function App() {
     getMyLocationDetails();
   }, []);
 
-  useEffect(() => {
-    console.log("myLocationLatitude: ", myLocationLatitude);
-    console.log("myLocationLongitude: ", myLocationLongitude);
-    console.log("myLocationTimezone: ", myLocationTimezone);
-  }, [myLocationLatitude, myLocationLongitude, myLocationTimezone]);
+  // useEffect(() => {
+  //   console.log("myLocationLatitude: ", myLocationLatitude);
+  //   console.log("myLocationLongitude: ", myLocationLongitude);
+  //   console.log("myLocationTimezone: ", myLocationTimezone);
+  // }, [myLocationLatitude, myLocationLongitude, myLocationTimezone]);
 
   //weather api url
   const weatherApiUrl =
@@ -65,6 +66,44 @@ function App() {
       ? `https://api.open-meteo.com/v1/forecast?latitude=${myLocationLatitude}&longitude=${myLocationLongitude}&minutely_15=temperature_2m,weather_code,relative_humidity_2m,wind_speed_10m,direct_radiation&timezone=${myLocationTimezone}`
       : null;
 
+  function findIndexOfCurrentTime(timeArray: string[]) {
+    const currentTime = new Date().toISOString().slice(0, 16);
+
+    let found = false;
+
+    // Iterate through the array
+    for (let i = 0; i < timeArray.length; i++) {
+      // Compare each time string with the current time
+      // console.log("timeArray[i] >= currentTime: ", timeArray[i] >= currentTime);
+
+      if (timeArray[i] >= currentTime && found == false) {
+        setCurrentTimeIndex(i); // Return the index when a time is greater than or equal to the current time
+        found = true;
+      }
+    }
+
+    if (found == false) setCurrentTimeIndex(-1);
+  }
+
+  const updateIndexOfCurrentTime = () => {
+    if (todaysForecast) {
+      const timeArray = todaysForecast.minutely_15.time.slice(0, 96); //slice done to get the time of just today
+      findIndexOfCurrentTime(timeArray);
+    }
+  };
+
+  useEffect(() => {
+    updateIndexOfCurrentTime();
+  }, []);
+
+  useEffect(() => {
+    updateIndexOfCurrentTime();
+  }, [todaysForecast]);
+
+  // useEffect(() => {
+  //   console.log("currentTimeIndex: ", currentTimeIndex);
+  // }, [currentTimeIndex]);
+
   const getWeatherInformation7days = async () => {
     if (weatherApiUrl) {
       try {
@@ -72,7 +111,7 @@ function App() {
 
         if (responses) {
           const weatherData = await responses.json();
-          console.log("Weather information: ", weatherData);
+          // console.log("Weather information: ", weatherData);
           setSevenDaysForecast(weatherData);
         }
       } catch (error) {
@@ -88,7 +127,7 @@ function App() {
 
         if (responses) {
           const todaysWeatherData = await responses.json();
-          console.log("Todays weather information: ", todaysWeatherData);
+          // console.log("Todays weather information: ", todaysWeatherData);
           setTodaysForecast(todaysWeatherData);
         }
       } catch (error) {
@@ -158,8 +197,8 @@ function App() {
 
   //make it dynamic in every 15minutes
   const todaysTemperature =
-    todaysForecast &&
-    `${todaysForecast.minutely_15.temperature_2m[0]} ${todaysForecast.minutely_15_units.temperature_2m}`;
+    todaysForecast && currentTimeIndex &&
+    `${todaysForecast.minutely_15.temperature_2m[currentTimeIndex]} ${todaysForecast.minutely_15_units.temperature_2m}`;
   const todaysSunrise =
     sevenDaysForecast && convertTimeToAMPM(sevenDaysForecast.daily.sunrise[0]);
   const todaysSunset =
@@ -167,33 +206,33 @@ function App() {
 
   //make it dynamic in every 15minutes
   const todaysWeatherCondition =
-    todaysForecast &&
-    (todaysForecast.minutely_15.weather_code[0] == 0
+    todaysForecast && currentTimeIndex &&
+    (todaysForecast.minutely_15.weather_code[currentTimeIndex] == 0
       ? "Sunny"
-      : todaysForecast.minutely_15.weather_code[0] == 1 ||
-        todaysForecast.minutely_15.weather_code[0] == 2 ||
-        todaysForecast.minutely_15.weather_code[0] == 3
+      : todaysForecast.minutely_15.weather_code[currentTimeIndex] == 1 ||
+        todaysForecast.minutely_15.weather_code[currentTimeIndex] == 2 ||
+        todaysForecast.minutely_15.weather_code[currentTimeIndex] == 3
       ? "Cloudy"
       : "Rainy");
   //make it dynamic in every 15minutes
   const weatherImgUrl =
-    todaysForecast &&
-    (todaysForecast.minutely_15.weather_code[0] == 0
+    todaysForecast && currentTimeIndex &&
+    (todaysForecast.minutely_15.weather_code[currentTimeIndex] == 0
       ? "./images/contrast.png"
-      : todaysForecast.minutely_15.weather_code[0] == 1 ||
-        todaysForecast.minutely_15.weather_code[0] == 2 ||
-        todaysForecast.minutely_15.weather_code[0] == 3
+      : todaysForecast.minutely_15.weather_code[currentTimeIndex] == 1 ||
+        todaysForecast.minutely_15.weather_code[currentTimeIndex] == 2 ||
+        todaysForecast.minutely_15.weather_code[currentTimeIndex] == 3
       ? "./images/cloudy.png"
       : "./images/rain.png");
 
   const humidity =
-    todaysForecast &&
-    `${todaysForecast.minutely_15.relative_humidity_2m[0]} ${todaysForecast.minutely_15_units.relative_humidity_2m}`;
+    todaysForecast && currentTimeIndex &&
+    `${todaysForecast.minutely_15.relative_humidity_2m[currentTimeIndex]} ${todaysForecast.minutely_15_units.relative_humidity_2m}`;
   const wind_speed =
-    todaysForecast &&
-    `${todaysForecast.minutely_15.wind_speed_10m[0]} ${todaysForecast.minutely_15_units.wind_speed_10m}`;
+    todaysForecast && currentTimeIndex &&
+    `${todaysForecast.minutely_15.wind_speed_10m[currentTimeIndex]} ${todaysForecast.minutely_15_units.wind_speed_10m}`;
   const uv =
-    todaysForecast && `${todaysForecast.minutely_15.direct_radiation[0]}`;
+    todaysForecast && currentTimeIndex && `${todaysForecast.minutely_15.direct_radiation[currentTimeIndex]}`;
 
   interface weatherDataType {
     temperature: string;
@@ -205,9 +244,9 @@ function App() {
     useState<weatherDataType[]>();
 
   const updateSevenDaysForecastExtractedData = () => {
-    console.log("called me!");
+    // console.log("called me!");
 
-    const duplicateArray:weatherDataType[] = Array.from({
+    const duplicateArray: weatherDataType[] = Array.from({
       length: 7,
     });
     for (let i = 0; i < 7; i++) {
@@ -217,7 +256,9 @@ function App() {
           imgUrl:
             sevenDaysForecast.daily.weather_code[i] == 0
               ? "./images/contrast.png"
-              : sevenDaysForecast.daily.weather_code[i] == 1 || sevenDaysForecast.daily.weather_code[i] == 2 || sevenDaysForecast.daily.weather_code[i] == 3
+              : sevenDaysForecast.daily.weather_code[i] == 1 ||
+                sevenDaysForecast.daily.weather_code[i] == 2 ||
+                sevenDaysForecast.daily.weather_code[i] == 3
               ? "./images/cloudy.png"
               : "./images/rain.png",
           day: getDayFromDate(sevenDaysForecast.daily.time[i]),
@@ -233,15 +274,14 @@ function App() {
 
   useEffect(() => {
     updateSevenDaysForecastExtractedData();
-    
   }, [sevenDaysForecast]);
 
-  useEffect(()=>{
-    console.log(
-      "sevenDaysForecastExtractedData: ",
-      sevenDaysForecastExtractedData
-    );
-  },[sevenDaysForecastExtractedData])
+  // useEffect(() => {
+  //   console.log(
+  //     "sevenDaysForecastExtractedData: ",
+  //     sevenDaysForecastExtractedData
+  //   );
+  // }, [sevenDaysForecastExtractedData]);
 
   return (
     <main>
