@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import "./App.css";
 // import { fetchWeatherApi } from "openmeteo";
+import { WiHumidity } from "react-icons/wi";
+import { LuWind } from "react-icons/lu";
+import { TbUvIndex } from "react-icons/tb";
 
 function App() {
   const search_location = "Pokhara";
@@ -197,7 +200,8 @@ function App() {
 
   //make it dynamic in every 15minutes
   const todaysTemperature =
-    todaysForecast && currentTimeIndex &&
+    todaysForecast &&
+    currentTimeIndex &&
     `${todaysForecast.minutely_15.temperature_2m[currentTimeIndex]} ${todaysForecast.minutely_15_units.temperature_2m}`;
   const todaysSunrise =
     sevenDaysForecast && convertTimeToAMPM(sevenDaysForecast.daily.sunrise[0]);
@@ -206,7 +210,8 @@ function App() {
 
   //make it dynamic in every 15minutes
   const todaysWeatherCondition =
-    todaysForecast && currentTimeIndex &&
+    todaysForecast &&
+    currentTimeIndex &&
     (todaysForecast.minutely_15.weather_code[currentTimeIndex] == 0
       ? "Sunny"
       : todaysForecast.minutely_15.weather_code[currentTimeIndex] == 1 ||
@@ -216,7 +221,8 @@ function App() {
       : "Rainy");
   //make it dynamic in every 15minutes
   const weatherImgUrl =
-    todaysForecast && currentTimeIndex &&
+    todaysForecast &&
+    currentTimeIndex &&
     (todaysForecast.minutely_15.weather_code[currentTimeIndex] == 0
       ? "./images/contrast.png"
       : todaysForecast.minutely_15.weather_code[currentTimeIndex] == 1 ||
@@ -226,13 +232,17 @@ function App() {
       : "./images/rain.png");
 
   const humidity =
-    todaysForecast && currentTimeIndex &&
+    todaysForecast &&
+    currentTimeIndex &&
     `${todaysForecast.minutely_15.relative_humidity_2m[currentTimeIndex]} ${todaysForecast.minutely_15_units.relative_humidity_2m}`;
   const wind_speed =
-    todaysForecast && currentTimeIndex &&
+    todaysForecast &&
+    currentTimeIndex &&
     `${todaysForecast.minutely_15.wind_speed_10m[currentTimeIndex]} ${todaysForecast.minutely_15_units.wind_speed_10m}`;
   const uv =
-    todaysForecast && currentTimeIndex && `${todaysForecast.minutely_15.direct_radiation[currentTimeIndex]}`;
+    todaysForecast &&
+    currentTimeIndex &&
+    `${todaysForecast.minutely_15.direct_radiation[currentTimeIndex]}`;
 
   interface weatherDataType {
     temperature: string;
@@ -284,59 +294,64 @@ function App() {
   // }, [sevenDaysForecastExtractedData]);
 
   return (
-    <main>
-      <h2 className=" ">
-        Your Location: {myLocation ? myLocation : "Tracking location..."}
+    <main className=" py-8 sm:py-12 md:py-16 px-8 sm:px-12 md:px-16 flex flex-col items-center text-center gap-8 sm:gap-12">
+      <h2 className=" text-xl">
+        Your Location:{" "}
+        <span className=" font-medium">
+          {myLocation ? myLocation : "Tracking location..."}
+        </span>
       </h2>
 
       {/*todays weather forecast*/}
       {todaysForecast && sevenDaysForecast ? (
-        <div>
-          <div>
-            <h1>{todaysTemperature}</h1>
+        <div className=" flex flex-col gap-6 items-center md:flex-row md:gap-16 lg:gap-20 xl:gap-24">
+          <div className=" flex flex-col gap-6 shrink-0">
+            <h1 className=" text-4xl font-bold md:text-5xl xl:text-6xl">{todaysTemperature}</h1>
 
-            <div>
-              <div>
+            <div className=" font-medium flex gap-6 md:flex-col items-end">
+              <div className=" flex flex-col items-end">
                 <span>Sunrise</span>
                 <span>{todaysSunrise}</span>
               </div>
 
-              <div>
+              <div className=" flex flex-col items-end">
                 <span>Sunset</span>
                 <span>{todaysSunset}</span>
               </div>
             </div>
           </div>
 
-          <div>
+          <div className="shrink-0 flex flex-col gap-5 items-center">
             <img
               src={weatherImgUrl}
               alt="weather-img"
-              className=" h-[155px] w-[155px] object-cover object-center"
+              className=" h-[125px] w-[125px] object-cover object-center"
             />
-            <span>{todaysWeatherCondition}</span>
+            <span className=" font-medium text-lg">
+              {todaysWeatherCondition}
+            </span>
           </div>
 
           {/*extra details*/}
-          <div>
-            <div>
+          <div className=" flex flex-wrap items-center justify-center gap-4">
+            <div className=" flex flex-col gap-1 items-center flex-1 min-w-[110px]">
               {/*icon here*/}
-
-              <span>{humidity}</span>
+              <WiHumidity className=" text-4xl text-black/75" />
+              <span className=" text-lg font-medium">{humidity}</span>
               <span>Humidity</span>
             </div>
 
-            <div>
+            <div className=" flex flex-col gap-1 items-center  flex-1 min-w-[110px]">
               {/*icon here*/}
-
-              <span>{wind_speed}</span>
+              <LuWind className=" text-3xl text-black/75" />
+              <span className=" text-lg font-medium">{wind_speed}</span>
               <span>Wind Speed</span>
             </div>
 
-            <div>
+            <div className=" flex flex-col gap-1 items-center flex-1 min-w-[110px]">
               {/*icon here*/}
-
-              <span>{uv}</span>
+              <TbUvIndex className=" text-3xl text-black/75" />
+              <span className=" text-lg font-medium">{uv}</span>
               <span>UV</span>
             </div>
           </div>
@@ -346,28 +361,28 @@ function App() {
       )}
 
       {/*7days weather forecast*/}
-      <div>
-        <h2>7 Days Forecast</h2>
+      <div className=" flex flex-col gap-4 w-full items-center">
+        <h2 className=" text-2xl font-medium">7 Days Forecast</h2>
 
         {sevenDaysForecastExtractedData &&
           sevenDaysForecastExtractedData.every(
             (weatherData) => weatherData != undefined
           ) && (
-            <div>
+            <div className=" flex gap-10 overflow-x-auto">
               {sevenDaysForecastExtractedData.slice(1).map((weatherData, i) => {
                 const { temperature, day, imgUrl } = weatherData;
 
                 return (
-                  <div key={i}>
+                  <div key={i} className=" flex flex-col gap-4 items-center shrink-0 py-4">
                     <img
                       src={imgUrl}
                       alt="weather-img"
                       className=" h-[40px] w-[40px] object-cover object-center"
                     />
 
-                    <div>
+                    <div className=" flex flex-col gap-1">
                       <span>{temperature}</span>
-                      <span className=" uppercase">
+                      <span className=" uppercase font-medium">
                         {i == 0 ? "tom" : day.slice(0, 3)}
                       </span>
                     </div>
